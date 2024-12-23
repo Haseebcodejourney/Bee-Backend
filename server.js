@@ -1,27 +1,36 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./config/database');
+const mysql = require('mysql2');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Route to fetch data from the database
-app.get('/api/data', (req, res) => {
-  const query = 'SELECT * FROM sensor_data';  // Make sure this query is correct
+// Database Connection Pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  database: process.env.DB_DATABASE || 'aiiovdt_bees',
+  port: process.env.DB_PORT || 8889,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-  db.query(query, (err, results) => {
+// API Endpoint
+app.get('/api/data', (req, res) => {
+  pool.query('SELECT * FROM sensor_data', (err, results) => {
     if (err) {
-      console.error('Database query error:', err);  // Log the error to the console
-      return res.status(500).json({ message: 'Database query error', error: err.message });  // Send error as JSON
+      console.error('Database query error:', err);
+      return res.status(500).json({ error: 'Database query error' });
     }
-    console.log('Fetched data:', results);  // Log the fetched data
-    res.json(results);  // Return data as JSON
+    res.json(results); // Send query results as JSON
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Export the app for Vercel
+module.exports = app;
