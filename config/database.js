@@ -1,25 +1,48 @@
+const express = require('express');
 const mysql = require('mysql2');
+const cors = require('cors');
 
-// Create a connection pool
-const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'root',  // Default password for MAMP MySQL
-  database: 'aiiovdt_bees',  // Your database name
-  port: 8889,  // Default port for MAMP MySQL
-  connectionLimit: 10  // Limit on the number of connections in the pool
+// Initialize Express App
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Database Connection
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  database: process.env.DB_DATABASE || 'aiiovdt_bees',
+  port: process.env.DB_PORT || 8889
 });
 
-// Example query using the pool
-const query = 'SELECT * FROM sensor_data';
-
-pool.query(query, (err, results) => {
+db.connect(err => {
   if (err) {
-    console.error('Error executing query:', err.message);  // Log query execution error
+    console.error('Database connection failed:', err.message);
   } else {
-    console.log('Query result:', results);  // Log the query results
+    console.log('Connected to the database!');
   }
 });
 
-// Export the pool for use in other files
-module.exports = pool;
+// API Route
+app.get('/api/data', (req, res) => {
+  const query = 'SELECT * FROM sensor_data';
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: 'Query Error', error: err.message });
+    }
+    res.json(results);
+  });
+});
+
+// Start Server (Only for local testing)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app; // Export for Vercel
