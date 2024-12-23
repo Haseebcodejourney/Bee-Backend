@@ -16,7 +16,10 @@ const db = mysql.createConnection({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'root',
   database: process.env.DB_DATABASE || 'aiiovdt_bees',
-  port: process.env.DB_PORT || 8889
+  port: process.env.DB_PORT || 8889,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 db.connect(err => {
