@@ -1,55 +1,53 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Database Connection Pool
-const db = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_DATABASE || 'aiiovdt_bees',
-  port: process.env.DB_PORT || 8889,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+// Database Connection
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  port: process.env.DB_PORT || 3306,
 });
 
-// Test Database Connection
-db.getConnection((err, connection) => {
+// Connect to Database
+db.connect(err => {
   if (err) {
     console.error('Database connection failed:', err.message);
   } else {
     console.log('Connected to the database!');
-    connection.release(); // Release the connection back to the pool
   }
 });
 
-// Default Route - Show Data
+// Default Route to Fetch Data
 app.get('/', (req, res) => {
-  const query = 'SELECT * FROM sensor_data'; // Replace 'sensor_data' with your table name
+  const query = 'SELECT * FROM sensor_data';
   db.query(query, (err, results) => {
     if (err) {
-      console.error('Database query error:', err);
-      return res.status(500).json({ message: 'Database query error', error: err.message });
+      console.error('Database query error:', err); // Log error
+      return res.status(500).json({
+        message: 'Database query error',
+        error: err.message,
+      });
     }
-    res.json(results); // Show data directly at root URL
+    res.json(results); // Send data as JSON
   });
 });
 
-// Start Server (for local testing)
-const PORT = process.env.PORT || 5002;
+// Start Server Locally (Optional)
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
-// Export for Vercel Deployment
-module.exports = app;
+module.exports = app; // Export for Vercel
